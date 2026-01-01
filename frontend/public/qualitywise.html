@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qualitywise - Entry Management System</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/fontawesome.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <i class="fas fa-star"></i>
+                    <h1>Qualitywise Management</h1>
+                </div>
+                <div class="nav-links">
+                    <a href="/" class="nav-link">MAIN PAGE</a>
+                    <a href="/qualitywise.html" class="nav-link active">QUALITY</a>
+                </div>
+                <div class="header-actions">
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="table-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-table"></i> Quality Entries</h2>
+                    <div class="table-actions">
+                        <div class="quality-filter">
+                            <label>Quality Range:</label>
+                            <select id="qualityFilter">
+                                <option value="">All</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="status-filter">
+                            <label>Status:</label>
+                            <select id="statusFilter">
+                                <option value="">All</option>
+                                <option value="available">Available</option>
+                                <option value="marked">Marked</option>
+                            </select>
+                        </div>
+                        <div class="export-actions">
+                            <button type="button" id="exportPdf" class="btn btn-outline">
+                                <i class="fas fa-file-pdf"></i>
+                                PDF
+                            </button>
+                            <button type="button" id="exportExcel" class="btn btn-outline">
+                                <i class="fas fa-file-excel"></i>
+                                Excel
+                            </button>
+                        </div>
+                        <div class="mark-actions">
+                            <button type="button" id="markSelected" class="btn btn-primary" disabled>
+                                <i class="fas fa-check"></i>
+                                Mark Selected
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-col">
+                                    <label class="checkbox-wrapper">
+                                        <input type="checkbox" id="selectAll">
+                                        <span class="checkmark"></span>
+                                    </label>
+                                </th>
+                                <th>AMOUNT</th>
+                                <th>WEIGHT</th>
+                                <th>RATE</th>
+                                <th>BAGS</th>
+                                <th>NAME</th>
+                                <th>QUALITY</th>
+                                <th>DATE</th>
+                                <th>STATUS</th>
+                                <th>ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="entriesTableBody">
+                            <tr id="loader" class="loader-row">
+                                <td colspan="10" style="text-align: center;">
+                                    <div class="loader">
+                                        <div class="spinner"></div>
+                                        <p>Loading entries...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Datewise Total Modal -->
+    <div id="datewiseModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content datewise-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-calendar-alt"></i> Datewise Total</h2>
+                <button type="button" class="modal-close" id="datewiseClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="datewise-results">
+                <div class="result-item">
+                    <i class="fas fa-box"></i>
+                    <span>Total Bags:</span>
+                    <strong id="resultBags">0</strong>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-weight"></i>
+                    <span>Total Weight:</span>
+                    <strong id="resultWeight">0</strong>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-money-bill"></i>
+                    <span>Total Amount:</span>
+                    <strong id="resultAmount">0</strong>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-store"></i>
+                    <span>Total Market Fee:</span>
+                    <strong id="resultMarketFee">0</strong>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="datewisePdf" class="btn btn-primary">
+                        <i class="fas fa-file-pdf"></i>
+                        Get PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/qualitywise.js"></script>
+</body>
+</html>

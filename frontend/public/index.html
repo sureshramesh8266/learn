@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entry Management System</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/fontawesome.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <i class="fas fa-chart-line"></i>
+                    <h1>Entry Management System</h1>
+                </div>
+                <div class="nav-links">
+                    <a href="/" class="nav-link active">MAIN PAGE</a>
+                    <a href="/qualitywise.html" class="nav-link">QUALITY</a>
+                </div>
+                <div class="header-actions">
+                    <button type="button" id="addEntryBtn" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Add Entry
+                    </button>
+                    <button type="button" id="deleteSelectedBtn" class="btn btn-danger" disabled>
+                        <i class="fas fa-trash"></i>
+                        Delete Selected
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalEntries">0</h3>
+                        <p>Total Entries</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="todayEntries">0</h3>
+                        <p>Today's Entries</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="selectedEntries">0</h3>
+                        <p>Selected</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table Section -->
+            <div class="table-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-table"></i> Entries Data</h2>
+                    <div class="table-actions">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="Search entries...">
+                        </div>
+                        <div class="export-actions">
+                            <button type="button" id="exportPdf" class="btn btn-outline">
+                                <i class="fas fa-file-pdf"></i>
+                                PDF
+                            </button>
+                            <button type="button" id="exportExcel" class="btn btn-outline">
+                                <i class="fas fa-file-excel"></i>
+                                Excel
+                            </button>
+                            <div class="date-range-section">
+                                <input type="date" id="startDate" class="date-input" placeholder="Start Date">
+                                <span>to</span>
+                                <input type="date" id="endDate" class="date-input" placeholder="End Date">
+                                <button type="button" id="filterByDate" class="btn btn-outline">
+                                    <i class="fas fa-filter"></i>
+                                    Filter
+                                </button>
+                                <button type="button" id="clearFilter" class="btn btn-outline">
+                                    <i class="fas fa-times"></i>
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-col">
+                                    <label class="checkbox-wrapper">
+                                        <input type="checkbox" id="selectAll">
+                                        <span class="checkmark"></span>
+                                    </label>
+                                </th>
+                                <th>DATE</th>
+                                <th>QUALITY</th>
+                                <th>ITEM</th>
+                                <th>NAME</th>
+                                <th>BAGS</th>
+                                <th>BHARTI</th>
+                                <th>WEIGHT</th>
+                                <th>RATE</th>
+                                <th>AMOUNT</th>
+                                <th>COMMISSION</th>
+                                <th>OTHER</th>
+                                <th>TOTAL</th>
+                                <th>MARKET FEE</th>
+                                <th>ACTION</th>
+                            </tr>
+                        </thead>
+                        <tbody id="entriesTableBody">
+                            <tr id="loader" class="loader-row">
+                                <td colspan="14" style="text-align: center;">
+                                    <div class="loader">
+                                        <div class="spinner"></div>
+                                        <p>Loading entries...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal -->
+    <div id="entryModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Add New Entry</h2>
+                <button type="button" class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="entryForm" class="modal-form">
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> Date</label>
+                    <input type="date" name="entry_date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Name</label>
+                    <input type="text" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-star"></i> Quality</label>
+                    <input type="text" name="quality" maxlength="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-tag"></i> Item</label>
+                    <input type="text" name="item" required>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-box"></i> Bags</label>
+                    <input type="number" name="bags" required>
+                </div>
+                
+                <div class="form-group bharti-group">
+                    <label><i class="fas fa-calculator"></i> Bharti Calculations</label>
+                    <div class="bharti-container">
+                        <div id="bhartiPairs">
+                            <div class="bharti-pair">
+                                <input type="number" step="0.01" class="bharti-a" required>
+                                <span class="multiply">×</span>
+                                <input type="number" step="0.01" class="bharti-b" required>
+                                <button type="button" class="remove-pair" style="display:none;">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <button type="button" id="addPair" class="btn btn-sm btn-outline">
+                            <i class="fas fa-plus"></i> Add Pair
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-weight"></i> Weight</label>
+                    <input type="number" step="0.01" name="weight" id="weight" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-dollar-sign"></i> Rate</label>
+                    <input type="number" step="0.01" name="rate" id="rate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-money-bill"></i> Amount</label>
+                    <input type="number" step="0.01" name="amount" id="amount" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-percent"></i> Commission</label>
+                    <input type="number" step="0.01" name="commission" id="commission" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-plus-circle"></i> Other</label>
+                    <input type="number" name="other_amount" id="other_amount">
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-calculator"></i> Total</label>
+                    <input type="number" step="0.01" name="total" id="total" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-store"></i> Market Fee</label>
+                    <input type="number" name="market_fee" required>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="cancelBtn" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Confirm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Datewise Total Modal -->
+    <div id="datewiseModal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content datewise-modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-calendar-alt"></i> Datewise Total</h2>
+                <button type="button" class="modal-close" id="datewiseClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="datewise-results">
+                <div class="result-item">
+                    <i class="fas fa-box"></i>
+                    <span>Total Bags:</span>
+                    <strong id="resultBags">0</strong>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-weight"></i>
+                    <span>Total Weight:</span>
+                    <strong id="resultWeight">0</strong>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-money-bill"></i>
+                    <span>Total Amount:</span>
+                    <strong id="resultAmount">0</strong>
+                </div>
+                <div class="result-item">
+                    <i class="fas fa-store"></i>
+                    <span>Total Market Fee:</span>
+                    <strong id="resultMarketFee">0</strong>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="datewisePdf" class="btn btn-primary">
+                        <i class="fas fa-file-pdf"></i>
+                        Get PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="http://localhost:3001/socket.io/socket.io.js"></script>
+    <script src="/script.js"></script>
+</body>
+</html>

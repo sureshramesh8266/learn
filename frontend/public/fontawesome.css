@@ -1,0 +1,50 @@
+/* Font Awesome Icons - CSS Only Version */
+.fas {
+  font-family: Arial, sans-serif;
+  font-weight: bold;
+  font-style: normal;
+  display: inline-block;
+  text-rendering: auto;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Essential Icons - Using Unicode symbols */
+.fa-chart-line:before { content: "📈"; }
+.fa-plus:before { content: "+"; }
+.fa-trash:before { content: "🗑"; }
+.fa-star:before { content: "⭐"; }
+.fa-database:before { content: "💾"; }
+.fa-calendar-day:before { content: "📅"; }
+.fa-check-circle:before { content: "✅"; }
+.fa-table:before { content: "📊"; }
+.fa-search:before { content: "🔍"; }
+.fa-file-pdf:before { content: "📄"; }
+.fa-file-excel:before { content: "📊"; }
+.fa-calendar-alt:before { content: "📅"; }
+.fa-times:before { content: "✖"; }
+.fa-calendar:before { content: "📅"; }
+.fa-user:before { content: "👤"; }
+.fa-tag:before { content: "🏷"; }
+.fa-box:before { content: "📦"; }
+.fa-calculator:before { content: "🧮"; }
+.fa-weight:before { content: "⚖"; }
+.fa-dollar-sign:before { content: "💲"; }
+.fa-money-bill:before { content: "💵"; }
+.fa-percent:before { content: "%"; }
+.fa-plus-circle:before { content: "⊕"; }
+.fa-store:before { content: "🏪"; }
+.fa-check:before { content: "✓"; }
+.fa-spinner:before { content: "⟳"; }
+.fa-undo:before { content: "↶"; }
+.fa-minus:before { content: "−"; }
+.fa-arrow-left:before { content: "←"; }
+.fa-edit:before { content: "✏️"; }
+
+.fa-spinner {
+  animation: fa-spin 2s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
