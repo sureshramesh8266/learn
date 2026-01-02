@@ -17,6 +17,7 @@ const addPairBtn = document.getElementById('addPair');
 const bhartiPairs = document.getElementById('bhartiPairs');
 const entriesTableBody = document.getElementById('entriesTableBody');
 const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+const logoutBtn = document.getElementById('logoutBtn');
 const confirmBtn = document.querySelector('#entryForm button[type="submit"]');
 const modalCloseBtn = document.querySelector('.modal-close');
 const modalBackdrop = document.querySelector('.modal-backdrop');
@@ -720,3 +721,25 @@ function editEntry(entryId) {
     // Show modal
     modal.style.display = 'block';
 }
+
+// Logout functionality
+logoutBtn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to logout?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            window.location.href = '/login';
+        } else {
+            alert('Logout failed');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});

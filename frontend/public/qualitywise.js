@@ -6,6 +6,7 @@ const selectAllCheckbox = document.getElementById('selectAll');
 const markSelectedBtn = document.getElementById('markSelected');
 const exportPdfBtn = document.getElementById('exportPdf');
 const exportExcelBtn = document.getElementById('exportExcel');
+const logoutBtn = document.getElementById('logoutBtn');
 
 let allEntries = [];
 
@@ -303,4 +304,26 @@ exportExcelBtn.addEventListener('click', async () => {
 
 document.querySelector('#datewiseModal .modal-backdrop').addEventListener('click', () => {
     document.getElementById('datewiseModal').style.display = 'none';
+});
+
+// Logout functionality
+logoutBtn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to logout?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/logout', {
+            method: 'POST',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            window.location.href = '/login';
+        } else {
+            alert('Logout failed');
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
 });

@@ -2,10 +2,12 @@ const express = require('express');
 const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
+const session = require('express-session');
 const { pool, createTable } = require('./database');
 const { jsPDF } = require('jspdf');
 require('jspdf-autotable');
 const XLSX = require('xlsx');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -22,10 +24,69 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(session({
+  secret: 'entry-management-secret',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { 
+    secure: false, 
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: false
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize database
 createTable();
+
+// Authentication middleware
+function requireAuth(req, res, next) {
+  if (req.session && req.session.authenticated) {
+    return next();
+  }
+  return res.status(401).json({ error: 'Authentication required' });
+}
+
+// Login endpoint
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  console.log('Login attempt for:', username);
+  
+  if (username === process.env.ADMIN_USERNAME && password === process.env.ADMIN_PASSWORD) {
+    req.session.authenticated = true;
+    req.session.save((err) => {
+      if (err) {
+        console.log('Session save error:', err);
+        return res.status(500).json({ error: 'Session save failed' });
+      }
+      console.log('Login successful, session saved:', req.session);
+      res.json({ success: true });
+    });
+  } else {
+    console.log('Login failed - invalid credentials');
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+// Logout endpoint
+app.post('/api/logout', (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
+
+// Check auth status
+app.get('/api/auth-status', (req, res) => {
+  console.log('Auth status check - Session:', req.session);
+  console.log('Authenticated property:', req.session?.authenticated);
+  const isAuth = !!(req.session && req.session.authenticated);
+  console.log('Returning authenticated:', isAuth);
+  res.json({ authenticated: isAuth });
+});
+
+// Test endpoint to verify auth is working
+app.get('/api/test-auth', requireAuth, (req, res) => {
+  res.json({ message: 'Authentication is working!', user: 'admin' });
+});
 
 
 
@@ -39,7 +100,7 @@ io.on('connection', (socket) => {
 });
 
 // Add new entry
-app.post('/api/entries', async (req, res) => {
+app.post('/api/entries', requireAuth, async (req, res) => {
   try {
     const {
       entry_date, name, bags, bharti_pairs, weight, rate, amount,
@@ -65,7 +126,7 @@ app.post('/api/entries', async (req, res) => {
 });
 
 // Get all entries
-app.get('/api/entries', async (req, res) => {
+app.get('/api/entries', requireAuth, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM entries ORDER BY created_at DESC');
     res.json({ success: true, data: result.rows });
@@ -76,7 +137,7 @@ app.get('/api/entries', async (req, res) => {
 });
 
 // Delete entries
-app.delete('/api/entries', async (req, res) => {
+app.delete('/api/entries', requireAuth, async (req, res) => {
   try {
     const { entryIds } = req.body;
     
@@ -101,7 +162,7 @@ app.delete('/api/entries', async (req, res) => {
 });
 
 // Export PDF
-app.post('/api/export/pdf', async (req, res) => {
+app.post('/api/export/pdf', requireAuth, async (req, res) => {
   try {
     console.log('PDF Export request body:', req.body);
     const { selectedEntries } = req.body;
@@ -258,7 +319,7 @@ app.post('/api/export/pdf', async (req, res) => {
 });
 
 // Export Excel
-app.post('/api/export/excel', async (req, res) => {
+app.post('/api/export/excel', requireAuth, async (req, res) => {
   try {
     const { selectedEntries } = req.body;
     
@@ -333,7 +394,7 @@ app.post('/api/export/excel', async (req, res) => {
 });
 
 // Datewise total endpoint
-app.post('/api/datewise-total', async (req, res) => {
+app.post('/api/datewise-total', requireAuth, async (req, res) => {
   try {
     const { date } = req.body;
     
@@ -367,7 +428,7 @@ app.post('/api/datewise-total', async (req, res) => {
 });
 
 // Mark/Unmark entries
-app.post('/api/mark-entries', async (req, res) => {
+app.post('/api/mark-entries', requireAuth, async (req, res) => {
   try {
     const { entryIds, marked } = req.body;
     
@@ -389,7 +450,7 @@ app.post('/api/mark-entries', async (req, res) => {
 });
 
 // Qualitywise PDF export
-app.post('/api/export/qualitywise-pdf', async (req, res) => {
+app.post('/api/export/qualitywise-pdf', requireAuth, async (req, res) => {
   try {
     const { selectedEntries } = req.body;
     
@@ -484,7 +545,7 @@ app.post('/api/export/qualitywise-pdf', async (req, res) => {
 });
 
 // Qualitywise Excel export
-app.post('/api/export/qualitywise-excel', async (req, res) => {
+app.post('/api/export/qualitywise-excel', requireAuth, async (req, res) => {
   try {
     const { selectedEntries } = req.body;
     
@@ -529,7 +590,7 @@ app.post('/api/export/qualitywise-excel', async (req, res) => {
 });
 
 // Update entry
-app.put('/api/entries/:id', async (req, res) => {
+app.put('/api/entries/:id', requireAuth, async (req, res) => {
   try {
     const entryId = req.params.id;
     const {
@@ -554,7 +615,7 @@ app.put('/api/entries/:id', async (req, res) => {
 });
 
 // Datewise PDF export
-app.post('/api/export/datewise-pdf', async (req, res) => {
+app.post('/api/export/datewise-pdf', requireAuth, async (req, res) => {
   try {
     const { date } = req.body;
     
