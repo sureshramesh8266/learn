@@ -446,7 +446,7 @@ app.post('/api/export/qualitywise-pdf', async (req, res) => {
     const totals = {
       amount: entries.reduce((sum, entry) => sum + ((entry.rate * entry.weight) / 20), 0),
       weight: entries.reduce((sum, entry) => sum + (parseFloat(entry.weight) || 0), 0),
-      rate: entries.reduce((sum, entry) => sum + (parseFloat(entry.rate) || 0), 0),
+      rate: (entries.reduce((sum, entry) => sum + ((entry.rate * entry.weight) / 20), 0) * 20) / entries.reduce((sum, entry) => sum + (parseFloat(entry.weight) || 0), 0),
       bags: entries.reduce((sum, entry) => sum + (parseFloat(entry.bags) || 0), 0)
     };
     
