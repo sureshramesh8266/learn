@@ -185,7 +185,13 @@ markSelectedBtn.addEventListener('click', async () => {
         });
         
         if (response.ok) {
-            loadEntries();
+            // Update entries in allEntries array
+            selectedEntries.forEach(id => {
+                const entry = allEntries.find(e => e.id == id);
+                if (entry) entry.is_marked = true;
+            });
+            // Reapply current filters instead of loading all entries
+            applyFilters();
         } else {
             alert('Error marking entries');
         }
@@ -206,7 +212,11 @@ async function undoSingleEntry(entryId) {
         });
         
         if (response.ok) {
-            loadEntries();
+            // Update entry in allEntries array
+            const entry = allEntries.find(e => e.id == entryId);
+            if (entry) entry.is_marked = false;
+            // Reapply current filters instead of loading all entries
+            applyFilters();
         } else {
             alert('Error undoing entry');
         }

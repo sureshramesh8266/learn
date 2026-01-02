@@ -96,6 +96,8 @@ function displayEntries(entries) {
 
 // Listen for new entries via WebSocket
 socket.on('newEntry', (entry) => {
+  // Add to allEntries array to keep it synchronized
+  allEntries.unshift(entry);
   addEntryToTable(entry, true);
 });
 

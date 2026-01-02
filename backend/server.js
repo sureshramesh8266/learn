@@ -22,9 +22,12 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Initialize database
 createTable();
+
+
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
@@ -199,10 +202,10 @@ app.post('/api/export/pdf', async (req, res) => {
       head: [headers],
       body: data,
       startY: 30,
-      styles: { fontSize: 7, cellPadding: 1.5, halign: 'center' },
-      headStyles: { fontSize: 7, fontStyle: 'bold', halign: 'center' },
+      styles: { fontSize: 8, cellPadding: 2, halign: 'center', overflow: 'linebreak' },
+      headStyles: { fontSize: 8, fontStyle: 'bold', halign: 'center' },
       tableWidth: 'auto',
-      margin: { left: 10, right: 10 },
+      margin: { left: 8, right: 8 },
       theme: 'grid',
       showHead: 'everyPage',
       pageBreak: 'auto'
@@ -233,10 +236,10 @@ app.post('/api/export/pdf', async (req, res) => {
     doc.autoTable({
       body: [totalRow],
       startY: doc.lastAutoTable.finalY,
-      styles: { fontSize: 7, fontStyle: 'bold', fillColor: [240, 240, 240], cellPadding: 1.5, halign: 'center' },
+      styles: { fontSize: 8, fontStyle: 'bold', fillColor: [240, 240, 240], cellPadding: 2, halign: 'center' },
       theme: 'grid',
       tableWidth: 'auto',
-      margin: { left: 10, right: 10 },
+      margin: { left: 8, right: 8 },
       columnStyles: columnWidths.reduce((acc, width, index) => {
         acc[index] = { cellWidth: width };
         return acc;
@@ -426,19 +429,10 @@ app.post('/api/export/qualitywise-pdf', async (req, res) => {
       head: [headers],
       body: data,
       startY: 30,
-      styles: { fontSize: 8, cellPadding: 2, halign: 'center' },
-      headStyles: { fontSize: 6, fontStyle: 'bold', halign: 'center' },
-      tableWidth: 'auto',
-      margin: { left: 10, right: 10 },
-      columnStyles: {
-        0: { cellWidth: 'auto' },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 'auto' },
-        3: { cellWidth: 'auto' },
-        4: { cellWidth: 'auto' },
-        5: { cellWidth: 'auto' },
-        6: { cellWidth: 'auto' }
-      },
+      styles: { fontSize: 12, cellPadding: 4, halign: 'center', overflow: 'ellipsis' },
+      headStyles: { fontSize: 12, fontStyle: 'bold', halign: 'center' },
+      tableWidth: 'wrap',
+      margin: { left: 5, right: 5 },
       theme: 'grid'
     });
     
@@ -468,10 +462,10 @@ app.post('/api/export/qualitywise-pdf', async (req, res) => {
     doc.autoTable({
       body: [totalRow],
       startY: doc.lastAutoTable.finalY,
-      styles: { fontSize: 8, fontStyle: 'bold', fillColor: [240, 240, 240], cellPadding: 2, halign: 'center' },
+      styles: { fontSize: 12, fontStyle: 'bold', fillColor: [240, 240, 240], cellPadding: 4, halign: 'center' },
       theme: 'grid',
-      tableWidth: 'auto',
-      margin: { left: 10, right: 10 },
+      tableWidth: 'wrap',
+      margin: { left: 5, right: 5 },
       columnStyles: columnWidths.reduce((acc, width, index) => {
         acc[index] = { cellWidth: width };
         return acc;
