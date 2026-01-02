@@ -120,17 +120,19 @@
                                 <th>BHARTI</th>
                                 <th>WEIGHT</th>
                                 <th>RATE</th>
+                                <th>LESSRATE</th>
                                 <th>AMOUNT</th>
                                 <th>COMMISSION</th>
                                 <th>OTHER</th>
                                 <th>TOTAL</th>
+                                <th>ALLAMOUNT</th>
                                 <th>MARKET FEE</th>
                                 <th>ACTION</th>
                             </tr>
                         </thead>
                         <tbody id="entriesTableBody">
                             <tr id="loader" class="loader-row">
-                                <td colspan="14" style="text-align: center;">
+                                <td colspan="16" style="text-align: center;">
                                     <div class="loader">
                                         <div class="spinner"></div>
                                         <p>Loading entries...</p>
@@ -233,6 +235,11 @@
                 <div class="form-group">
                     <label><i class="fas fa-store"></i> Market Fee</label>
                     <input type="number" name="market_fee" required>
+                </div>
+                
+                <div class="form-group">
+                    <label><i class="fas fa-minus-circle"></i> Less Rate</label>
+                    <input type="number" step="0.01" name="lessrate" id="lessrate">
                 </div>
                 
                 <div class="modal-actions">

@@ -40,13 +40,13 @@ app.post('/api/entries', async (req, res) => {
   try {
     const {
       entry_date, name, bags, bharti_pairs, weight, rate, amount,
-      commission, other_amount, total, quality, item, market_fee
+      commission, other_amount, total, quality, item, market_fee, lessrate
     } = req.body;
 
     const result = await pool.query(
-      `INSERT INTO entries (entry_date, name, bags, bharti_pairs, weight, rate, amount, commission, other_amount, total, quality, item, market_fee)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
-      [entry_date, name, bags, JSON.stringify(bharti_pairs), weight, rate, amount, commission, other_amount || 0, total, quality, item, market_fee]
+      `INSERT INTO entries (entry_date, name, bags, bharti_pairs, weight, rate, amount, commission, other_amount, total, quality, item, market_fee, lessrate)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
+      [entry_date, name, bags, JSON.stringify(bharti_pairs), weight, rate, amount, commission, other_amount || 0, total, quality, item, market_fee, lessrate || 0]
     );
 
     const newEntry = result.rows[0];
@@ -100,50 +100,76 @@ app.delete('/api/entries', async (req, res) => {
 // Export PDF
 app.post('/api/export/pdf', async (req, res) => {
   try {
-    const { selectedFields, entries } = req.body;
+    console.log('PDF Export request body:', req.body);
+    const { selectedEntries } = req.body;
     
-    const doc = new jsPDF();
+    if (!selectedEntries || selectedEntries.length === 0) {
+      console.log('No entries selected for PDF export');
+      return res.status(400).json({ error: 'No entries selected' });
+    }
+    
+    // Ensure selectedEntries is an array
+    const entryIds = Array.isArray(selectedEntries) ? selectedEntries : [selectedEntries];
+    console.log('Entry IDs for PDF export:', entryIds);
+    
+    const placeholders = entryIds.map((_, index) => `$${index + 1}`).join(',');
+    const result = await pool.query(
+      `SELECT * FROM entries WHERE id IN (${placeholders}) ORDER BY entry_date DESC`,
+      entryIds
+    );
+    
+    const entries = result.rows;
+    console.log('Found entries for PDF export:', entries.length);
+    
+    if (entries.length === 0) {
+      return res.status(400).json({ error: 'No matching entries found' });
+    }
+    
+    // Create PDF in landscape orientation
+    const doc = new jsPDF('landscape', 'mm', 'a4');
     doc.setFontSize(16);
     doc.text('Entries Report', 20, 20);
 
-    const headers = [];
-    const fieldMap = {
-      entry_date: 'DATE',
-      quality: 'QUALITY',
-      item: 'ITEM',
-      name: 'NAME',
-      bags: 'BAGS',
-      bharti_pairs: 'BHARTI',
-      weight: 'WEIGHT',
-      rate: 'RATE',
-      amount: 'AMOUNT',
-      commission: 'COMMISSION',
-      other_amount: 'OTHER',
-      total: 'TOTAL',
-      market_fee: 'MARKET FEE'
-    };
-
-    selectedFields.forEach(field => {
-      if (fieldMap[field]) {
-        headers.push(fieldMap[field]);
-      }
-    });
-
+    const headers = ['DATE', 'QUALITY', 'ITEM', 'NAME', 'BAGS', 'BHARTI', 'WEIGHT', 'RATE', 'LESSRATE', 'AMOUNT', 'COMMISSION', 'OTHER', 'TOTAL', 'ALLAMOUNT', 'MARKET FEE'];
     const data = entries.map(entry => {
-      return selectedFields.map(field => {
-        if (field === 'bharti_pairs') {
-          const pairs = typeof entry[field] === 'string' ? JSON.parse(entry[field]) : entry[field];
-          return pairs.map(pair => `(${pair.a}×${pair.b})`).join('\n');
+      const bhartiPairs = typeof entry.bharti_pairs === 'string' ? JSON.parse(entry.bharti_pairs) : entry.bharti_pairs;
+      const bhartiDisplay = bhartiPairs.map(pair => `(${pair.a}×${pair.b})`).join('\n');
+      
+      // Calculate ALLAMOUNT (sum of total for same name and date, only for first occurrence)
+      const sameNameDateEntries = entries.filter(e => 
+        e.name === entry.name && 
+        new Date(e.entry_date).toDateString() === new Date(entry.entry_date).toDateString()
+      );
+      
+      let allAmount = 0;
+      if (sameNameDateEntries.length === 1) {
+        // Only one entry with this name+date, show its total
+        allAmount = parseFloat(entry.total) || 0;
+      } else {
+        // Multiple entries, only first one gets the sum
+        const firstEntry = sameNameDateEntries.sort((a, b) => a.id - b.id)[0];
+        if (entry.id === firstEntry.id) {
+          allAmount = sameNameDateEntries.reduce((sum, e) => sum + (parseFloat(e.total) || 0), 0);
         }
-        if (field === 'entry_date') {
-          // Format date as YYYY-MM-DD to avoid timezone issues
-          const date = new Date(entry[field]);
-          return date.getFullYear() + '-' + 
-                 String(date.getMonth() + 1).padStart(2, '0') + '-' + 
-                 String(date.getDate()).padStart(2, '0');
-        }
-        return entry[field] || '';
-      });
+      }
+      
+      return [
+        new Date(entry.entry_date).toLocaleDateString(),
+        entry.quality,
+        entry.item,
+        entry.name,
+        entry.bags,
+        bhartiDisplay,
+        entry.weight,
+        entry.rate,
+        entry.lessrate || 0,
+        entry.amount,
+        entry.commission,
+        entry.other_amount || 0,
+        entry.total,
+        allAmount.toFixed(2),
+        entry.market_fee
+      ];
     });
 
     // Calculate totals
@@ -153,34 +179,61 @@ app.post('/api/export/pdf', async (req, res) => {
       total: entries.reduce((sum, entry) => sum + (parseFloat(entry.total) || 0), 0),
       market_fee: entries.reduce((sum, entry) => sum + (parseFloat(entry.market_fee) || 0), 0)
     };
+    
+    // Calculate ALLAMOUNT total (sum of all non-zero ALLAMOUNT values)
+    let allAmountTotal = 0;
+    const processedNameDates = new Set();
+    entries.forEach(entry => {
+      const nameDate = `${entry.name}_${new Date(entry.entry_date).toDateString()}`;
+      if (!processedNameDates.has(nameDate)) {
+        processedNameDates.add(nameDate);
+        const sameNameDateEntries = entries.filter(e => 
+          e.name === entry.name && 
+          new Date(e.entry_date).toDateString() === new Date(entry.entry_date).toDateString()
+        );
+        allAmountTotal += sameNameDateEntries.reduce((sum, e) => sum + (parseFloat(e.total) || 0), 0);
+      }
+    });
 
     doc.autoTable({
       head: [headers],
       body: data,
       startY: 30,
-      styles: { fontSize: 8, cellPadding: 2, halign: 'center' },
-      headStyles: { fontSize: 6, fontStyle: 'bold', halign: 'center' },
+      styles: { fontSize: 7, cellPadding: 1.5, halign: 'center' },
+      headStyles: { fontSize: 7, fontStyle: 'bold', halign: 'center' },
       tableWidth: 'auto',
       margin: { left: 10, right: 10 },
-      theme: 'grid'
+      theme: 'grid',
+      showHead: 'everyPage',
+      pageBreak: 'auto'
     });
     
     // Store column widths for totals alignment
     const columnWidths = doc.lastAutoTable.columns.map(col => col.width);
     
     // Add totals row with exact column alignment
-    const totalRow = selectedFields.map(field => {
-      if (field === 'bags') return totals.bags.toString();
-      if (field === 'weight') return totals.weight.toFixed(2);
-      if (field === 'total') return totals.total.toFixed(2);
-      if (field === 'market_fee') return totals.market_fee.toString();
-      return '';
-    });
+    const totalRow = [
+      '',
+      '',
+      '',
+      '',
+      totals.bags.toString(),
+      '',
+      totals.weight.toFixed(2),
+      '',
+      '',
+      '',
+      '',
+      '',
+      totals.total.toFixed(2),
+      allAmountTotal.toFixed(2),
+      totals.market_fee.toString()
+    ];
     
     doc.autoTable({
       body: [totalRow],
       startY: doc.lastAutoTable.finalY,
-      styles: { fontSize: 8, fontStyle: 'bold', fillColor: [240, 240, 240], cellPadding: 2, halign: 'center' },
+      styles: { fontSize: 7, fontStyle: 'bold', fillColor: [240, 240, 240], cellPadding: 1.5, halign: 'center' },
       theme: 'grid',
       tableWidth: 'auto',
       margin: { left: 10, right: 10 },
@@ -196,7 +249,7 @@ app.post('/api/export/pdf', async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename=entries.pdf');
     res.send(pdfBuffer);
   } catch (err) {
-    console.error(err);
+    console.error('PDF Export Error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -204,21 +257,61 @@ app.post('/api/export/pdf', async (req, res) => {
 // Export Excel
 app.post('/api/export/excel', async (req, res) => {
   try {
-    const { selectedFields, entries } = req.body;
+    const { selectedEntries } = req.body;
     
+    if (!selectedEntries || selectedEntries.length === 0) {
+      return res.status(400).json({ error: 'No entries selected' });
+    }
+    
+    // Ensure selectedEntries is an array
+    const entryIds = Array.isArray(selectedEntries) ? selectedEntries : [selectedEntries];
+    
+    const placeholders = entryIds.map((_, index) => `$${index + 1}`).join(',');
+    const result = await pool.query(
+      `SELECT * FROM entries WHERE id IN (${placeholders}) ORDER BY entry_date DESC`,
+      entryIds
+    );
+    
+    const entries = result.rows;
     const filteredData = entries.map(entry => {
-      const filtered = {};
-      selectedFields.forEach(field => {
-        if (field === 'bharti_pairs') {
-          const pairs = typeof entry[field] === 'string' ? JSON.parse(entry[field]) : entry[field];
-          filtered[field] = pairs.map(pair => `(${pair.a}×${pair.b})`).join('\n');
-        } else if (field === 'entry_date') {
-          filtered[field] = new Date(entry[field]).toLocaleDateString();
-        } else {
-          filtered[field] = entry[field];
+      const bhartiPairs = typeof entry.bharti_pairs === 'string' ? JSON.parse(entry.bharti_pairs) : entry.bharti_pairs;
+      const bhartiDisplay = bhartiPairs.map(pair => `(${pair.a}×${pair.b})`).join('\n');
+      
+      // Calculate ALLAMOUNT (sum of total for same name and date, only for first occurrence)
+      const sameNameDateEntries = entries.filter(e => 
+        e.name === entry.name && 
+        new Date(e.entry_date).toDateString() === new Date(entry.entry_date).toDateString()
+      );
+      
+      let allAmount = 0;
+      if (sameNameDateEntries.length === 1) {
+        // Only one entry with this name+date, show its total
+        allAmount = parseFloat(entry.total) || 0;
+      } else {
+        // Multiple entries, only first one gets the sum
+        const firstEntry = sameNameDateEntries.sort((a, b) => a.id - b.id)[0];
+        if (entry.id === firstEntry.id) {
+          allAmount = sameNameDateEntries.reduce((sum, e) => sum + (parseFloat(e.total) || 0), 0);
         }
-      });
-      return filtered;
+      }
+      
+      return {
+        DATE: new Date(entry.entry_date).toLocaleDateString(),
+        QUALITY: entry.quality,
+        ITEM: entry.item,
+        NAME: entry.name,
+        BAGS: entry.bags,
+        BHARTI: bhartiDisplay,
+        WEIGHT: entry.weight,
+        RATE: entry.rate,
+        LESSRATE: entry.lessrate || 0,
+        AMOUNT: entry.amount,
+        COMMISSION: entry.commission,
+        OTHER: entry.other_amount || 0,
+        TOTAL: entry.total,
+        ALLAMOUNT: allAmount.toFixed(2),
+        'MARKET FEE': entry.market_fee
+      };
     });
 
     const ws = XLSX.utils.json_to_sheet(filteredData);
@@ -319,7 +412,7 @@ app.post('/api/export/qualitywise-pdf', async (req, res) => {
 
     const headers = ['AMOUNT', 'WEIGHT', 'RATE', 'BAGS', 'ITEM', 'NAME', 'QUALITY', 'DATE'];
     const data = entries.map(entry => [
-      entry.amount,
+      ((entry.rate * entry.weight) / 20).toFixed(2),
       entry.weight,
       entry.rate,
       entry.bags,
@@ -351,7 +444,7 @@ app.post('/api/export/qualitywise-pdf', async (req, res) => {
     
     // Calculate totals
     const totals = {
-      amount: entries.reduce((sum, entry) => sum + (parseFloat(entry.amount) || 0), 0),
+      amount: entries.reduce((sum, entry) => sum + ((entry.rate * entry.weight) / 20), 0),
       weight: entries.reduce((sum, entry) => sum + (parseFloat(entry.weight) || 0), 0),
       rate: entries.reduce((sum, entry) => sum + (parseFloat(entry.rate) || 0), 0),
       bags: entries.reduce((sum, entry) => sum + (parseFloat(entry.bags) || 0), 0)
@@ -416,7 +509,7 @@ app.post('/api/export/qualitywise-excel', async (req, res) => {
     
     const entries = result.rows;
     const filteredData = entries.map(entry => ({
-      AMOUNT: entry.amount,
+      AMOUNT: ((entry.rate * entry.weight) / 20).toFixed(2),
       WEIGHT: entry.weight,
       RATE: entry.rate,
       BAGS: entry.bags,
@@ -447,12 +540,12 @@ app.put('/api/entries/:id', async (req, res) => {
     const entryId = req.params.id;
     const {
       entry_date, name, bags, bharti_pairs, weight, rate, amount,
-      commission, other_amount, total, quality, item, market_fee
+      commission, other_amount, total, quality, item, market_fee, lessrate
     } = req.body;
 
     const result = await pool.query(
-      `UPDATE entries SET entry_date = $1, name = $2, bags = $3, bharti_pairs = $4, weight = $5, rate = $6, amount = $7, commission = $8, other_amount = $9, total = $10, quality = $11, item = $12, market_fee = $13, updated_at = CURRENT_TIMESTAMP WHERE id = $14 RETURNING *`,
-      [entry_date, name, bags, JSON.stringify(bharti_pairs), weight, rate, amount, commission, other_amount || 0, total, quality, item, market_fee, entryId]
+      `UPDATE entries SET entry_date = $1, name = $2, bags = $3, bharti_pairs = $4, weight = $5, rate = $6, amount = $7, commission = $8, other_amount = $9, total = $10, quality = $11, item = $12, market_fee = $13, lessrate = $14, updated_at = CURRENT_TIMESTAMP WHERE id = $15 RETURNING *`,
+      [entry_date, name, bags, JSON.stringify(bharti_pairs), weight, rate, amount, commission, other_amount || 0, total, quality, item, market_fee, lessrate || 0, entryId]
     );
 
     if (result.rows.length === 0) {
@@ -490,7 +583,7 @@ app.post('/api/export/datewise-pdf', async (req, res) => {
     doc.setFontSize(16);
     doc.text(`Datewise Report - ${new Date(date).toLocaleDateString()}`, 20, 20);
 
-    const headers = ['DATE', 'QUALITY', 'ITEM', 'NAME', 'BAGS', 'BHARTI', 'WEIGHT', 'RATE', 'AMOUNT', 'COMMISSION', 'OTHER', 'TOTAL', 'MARKET FEE'];
+    const headers = ['DATE', 'QUALITY', 'ITEM', 'NAME', 'BAGS', 'BHARTI', 'WEIGHT', 'RATE', 'LESSRATE', 'AMOUNT', 'COMMISSION', 'OTHER', 'TOTAL', 'MARKET FEE'];
     const data = entries.map(entry => {
       const bhartiPairs = typeof entry.bharti_pairs === 'string' ? JSON.parse(entry.bharti_pairs) : entry.bharti_pairs;
       const bhartiDisplay = bhartiPairs.map(pair => `(${pair.a}×${pair.b})`).join('\n');
@@ -504,6 +597,7 @@ app.post('/api/export/datewise-pdf', async (req, res) => {
         bhartiDisplay,
         entry.weight,
         entry.rate,
+        entry.lessrate || 0,
         entry.amount,
         entry.commission,
         entry.other_amount || 0,
@@ -540,6 +634,7 @@ app.post('/api/export/datewise-pdf', async (req, res) => {
       totals.bags.toString(),
       '',
       totals.weight.toFixed(2),
+      '',
       '',
       '',
       '',

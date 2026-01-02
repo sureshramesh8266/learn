@@ -45,27 +45,13 @@ app.delete('/api/entries', async (req, res) => {
 
 app.post('/api/export/pdf', async (req, res) => {
   try {
-    const { selectedEntries } = req.body;
-    
-    if (!selectedEntries || selectedEntries.length === 0) {
-      return res.status(400).json({ success: false, error: 'No entries selected' });
+    // Parse selectedEntries if it's a JSON string
+    let selectedEntries = req.body.selectedEntries;
+    if (typeof selectedEntries === 'string') {
+      selectedEntries = JSON.parse(selectedEntries);
     }
     
-    const entriesResponse = await axios.get(`${API_BASE_URL}/entries`);
-    const entries = entriesResponse.data.data;
-    
-    const selectedEntriesData = entries.filter(entry => 
-      selectedEntries.includes(entry.id.toString())
-    );
-    
-    if (selectedEntriesData.length === 0) {
-      return res.status(400).json({ success: false, error: 'No matching entries found' });
-    }
-    
-    const response = await axios.post(`${API_BASE_URL}/export/pdf`, {
-      selectedFields: ['entry_date', 'quality', 'item', 'name', 'bags', 'bharti_pairs', 'weight', 'rate', 'amount', 'commission', 'other_amount', 'total', 'market_fee'],
-      entries: selectedEntriesData
-    }, { responseType: 'stream' });
+    const response = await axios.post(`${API_BASE_URL}/export/pdf`, { selectedEntries }, { responseType: 'stream' });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=entries.pdf');
@@ -78,17 +64,13 @@ app.post('/api/export/pdf', async (req, res) => {
 
 app.post('/api/export/excel', async (req, res) => {
   try {
-    const entriesResponse = await axios.get(`${API_BASE_URL}/entries`);
-    const entries = entriesResponse.data.data;
+    // Parse selectedEntries if it's a JSON string
+    let selectedEntries = req.body.selectedEntries;
+    if (typeof selectedEntries === 'string') {
+      selectedEntries = JSON.parse(selectedEntries);
+    }
     
-    const selectedEntriesData = entries.filter(entry => 
-      req.body.selectedEntries.includes(entry.id.toString())
-    );
-    
-    const response = await axios.post(`${API_BASE_URL}/export/excel`, {
-      selectedFields: ['entry_date', 'quality', 'item', 'name', 'bags', 'bharti_pairs', 'weight', 'rate', 'amount', 'commission', 'other_amount', 'total', 'market_fee'],
-      entries: selectedEntriesData
-    }, { responseType: 'stream' });
+    const response = await axios.post(`${API_BASE_URL}/export/excel`, { selectedEntries }, { responseType: 'stream' });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', 'attachment; filename=entries.xlsx');

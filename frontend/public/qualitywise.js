@@ -52,7 +52,7 @@ function displayEntries(entries) {
                     <span class="checkmark ${isMarked ? 'disabled' : ''}"></span>
                 </label>
             </td>
-            <td>${entry.amount}</td>
+            <td>${((entry.rate * entry.weight) / 20).toFixed(2)}</td>
             <td>${entry.weight}</td>
             <td>${entry.rate}</td>
             <td>${entry.bags}</td>

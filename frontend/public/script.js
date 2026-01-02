@@ -1,6 +1,7 @@
 // DOM elements
 const weightField = document.getElementById('weight');
 const rateField = document.getElementById('rate');
+const lessrateField = document.getElementById('lessrate');
 const amountField = document.getElementById('amount');
 const commissionField = document.getElementById('commission');
 const otherField = document.getElementById('other_amount');
@@ -108,6 +109,24 @@ function addEntryToTable(entry, isNew = false) {
     bhartiDisplay = pairs.map(pair => `(${pair.a}×${pair.b})`).join('<br>');
   }
   
+  // Calculate ALLAMOUNT (sum of total for same name and date, only for first occurrence)
+  const sameNameDateEntries = allEntries.filter(e => 
+    e.name === entry.name && 
+    new Date(e.entry_date).toDateString() === new Date(entry.entry_date).toDateString()
+  );
+  
+  let allAmount = 0;
+  if (sameNameDateEntries.length === 1) {
+    // Only one entry with this name+date, show its total
+    allAmount = parseFloat(entry.total) || 0;
+  } else {
+    // Multiple entries, only first one gets the sum
+    const firstEntry = sameNameDateEntries.sort((a, b) => a.id - b.id)[0];
+    if (entry.id === firstEntry.id) {
+      allAmount = sameNameDateEntries.reduce((sum, e) => sum + (parseFloat(e.total) || 0), 0);
+    }
+  }
+  
   row.innerHTML = `
     <td class="checkbox-col">
       <label class="checkbox-wrapper">
@@ -128,10 +147,12 @@ function addEntryToTable(entry, isNew = false) {
     <td class="bharti-cell">${bhartiDisplay}</td>
     <td>${entry.weight}</td>
     <td>${entry.rate}</td>
+    <td>${entry.lessrate || 0}</td>
     <td>${entry.amount}</td>
     <td>${entry.commission}</td>
     <td>${entry.other_amount || 0}</td>
     <td class="total-cell">${entry.total}</td>
+    <td class="allamount-cell">${allAmount.toFixed(2)}</td>
     <td>${entry.market_fee}</td>
     <td>
       <button class="btn btn-sm btn-outline edit-btn" data-id="${entry.id}">
@@ -275,11 +296,12 @@ function calculateWeight() {
     calculateAmount();
 }
 
-// Calculate amount (rate * weight / 20)
+// Calculate amount ((rate - lessrate) * weight / 20)
 function calculateAmount() {
     const rate = parseFloat(rateField.value) || 0;
+    const lessrate = parseFloat(lessrateField.value) || 0;
     const weight = parseFloat(weightField.value) || 0;
-    const amount = (rate * weight) / 20;
+    const amount = ((rate - lessrate) * weight) / 20;
     amountField.value = amount.toFixed(2);
     calculateCommission();
 }
@@ -303,6 +325,15 @@ function calculateTotal() {
 
 // Modal functionality
 addEntryBtn.addEventListener('click', () => {
+    // Reset modal title and button for add mode
+    const modalTitle = document.querySelector('.modal-header h2');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Entry';
+    }
+    if (confirmBtn) {
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm';
+    }
+    
     modal.style.display = 'block';
     // Set today's date as default
     const dateInput = document.querySelector('input[name="entry_date"]');
@@ -313,26 +344,22 @@ addEntryBtn.addEventListener('click', () => {
 
 closeBtn.addEventListener('click', () => {
     modal.style.display = 'none';
-    entryForm.reset();
-    resetBhartiPairs();
+    resetModal();
 });
 
 modalCloseBtn.addEventListener('click', () => {
     modal.style.display = 'none';
-    entryForm.reset();
-    resetBhartiPairs();
+    resetModal();
 });
 
 modalBackdrop.addEventListener('click', () => {
     modal.style.display = 'none';
-    entryForm.reset();
-    resetBhartiPairs();
+    resetModal();
 });
 
 cancelBtn.addEventListener('click', () => {
     modal.style.display = 'none';
-    entryForm.reset();
-    resetBhartiPairs();
+    resetModal();
 });
 
 function resetBhartiPairs() {
@@ -343,6 +370,24 @@ function resetBhartiPairs() {
     }
     pairCount = 1;
     updateRemoveButtons();
+}
+
+function resetModal() {
+    // Reset modal title and button text
+    const modalTitle = document.querySelector('.modal-header h2');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-plus-circle"></i> Add New Entry';
+    }
+    if (confirmBtn) {
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Confirm';
+    }
+    
+    // Clear edit ID
+    delete entryForm.dataset.editId;
+    
+    // Reset form and bharti pairs
+    entryForm.reset();
+    resetBhartiPairs();
 }
 
 // Form submission
@@ -387,9 +432,7 @@ entryForm.addEventListener('submit', async (e) => {
         
         if (response.ok) {
             modal.style.display = 'none';
-            entryForm.reset();
-            resetBhartiPairs();
-            delete entryForm.dataset.editId;
+            resetModal();
             if (isEdit) loadEntries(); // Reload entries for edit
         } else {
             alert(isEdit ? 'Error updating entry' : 'Error adding entry');
@@ -443,6 +486,7 @@ deleteSelectedBtn.addEventListener('click', async () => {
 
 // Event listeners for calculations
 rateField.addEventListener('input', calculateAmount);
+lessrateField.addEventListener('input', calculateAmount);
 otherField.addEventListener('input', calculateTotal);
 
 // Get selected entries for export
@@ -483,13 +527,12 @@ exportPdfBtn.addEventListener('click', async () => {
         form.method = 'POST';
         form.action = '/api/export/pdf';
         
-        selectedEntries.forEach(entryId => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'selectedEntries';
-            input.value = entryId;
-            form.appendChild(input);
-        });
+        // Add selectedEntries as a JSON string
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'selectedEntries';
+        input.value = JSON.stringify(selectedEntries);
+        form.appendChild(input);
         
         document.body.appendChild(form);
         form.submit();
@@ -523,13 +566,12 @@ exportExcelBtn.addEventListener('click', async () => {
         form.method = 'POST';
         form.action = '/api/export/excel';
         
-        selectedEntries.forEach(entryId => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'selectedEntries';
-            input.value = entryId;
-            form.appendChild(input);
-        });
+        // Add selectedEntries as a JSON string
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'selectedEntries';
+        input.value = JSON.stringify(selectedEntries);
+        form.appendChild(input);
         
         document.body.appendChild(form);
         form.submit();
@@ -630,6 +672,17 @@ function editEntry(entryId) {
         return;
     }
     
+    // Change modal title for edit
+    const modalTitle = document.querySelector('.modal-header h2');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Entry';
+    }
+    
+    // Change confirm button text
+    if (confirmBtn) {
+        confirmBtn.innerHTML = '<i class="fas fa-check"></i> Update';
+    }
+    
     // Populate form with entry data - fix date formatting
     const entryDate = new Date(entry.entry_date);
     const formattedDate = entryDate.getFullYear() + '-' + 
@@ -643,6 +696,7 @@ function editEntry(entryId) {
     document.querySelector('input[name="rate"]').value = entry.rate;
     document.querySelector('input[name="other_amount"]').value = entry.other_amount || 0;
     document.querySelector('input[name="market_fee"]').value = entry.market_fee;
+    document.querySelector('input[name="lessrate"]').value = entry.lessrate || 0;
     
     // Populate bharti pairs
     const bhartiPairs = typeof entry.bharti_pairs === 'string' ? JSON.parse(entry.bharti_pairs) : entry.bharti_pairs;

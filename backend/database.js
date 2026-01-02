@@ -47,6 +47,13 @@ const createTable = async () => {
       // Column might already exist, ignore error
     }
     
+    // Add lessrate column if it doesn't exist
+    try {
+      await pool.query(`ALTER TABLE entries ADD COLUMN IF NOT EXISTS lessrate DECIMAL(10,2) DEFAULT 0`);
+    } catch (err) {
+      // Column might already exist, ignore error
+    }
+    
     // Create trigger for updated_at
     await pool.query(`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
