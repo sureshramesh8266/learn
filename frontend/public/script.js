@@ -35,7 +35,9 @@ let socket = null;
 // Initialize Socket.IO connection
 function initializeSocket() {
   try {
-    socket = io();
+    // For production deployment, connect to current domain
+    const socketUrl = window.location.protocol + '//' + window.location.host;
+    socket = io(socketUrl);
     
     socket.on('connect', () => {
       console.log('Socket connected:', socket.id);
