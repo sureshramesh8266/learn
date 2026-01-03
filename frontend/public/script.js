@@ -442,7 +442,8 @@ entryForm.addEventListener('submit', async (e) => {
         if (response.ok) {
             modal.style.display = 'none';
             resetModal();
-            if (isEdit) loadEntries(); // Reload entries for edit
+            // Reload entries after add/edit
+            await loadEntries();
         } else {
             alert(isEdit ? 'Error updating entry' : 'Error adding entry');
         }
@@ -481,7 +482,10 @@ deleteSelectedBtn.addEventListener('click', async () => {
             body: JSON.stringify({ entryIds: selectedEntries.map(id => parseInt(id)) })
         });
         
-        if (!response.ok) {
+        if (response.ok) {
+            // Reload entries after successful deletion
+            await loadEntries();
+        } else {
             alert('Error deleting entries');
         }
     } catch (error) {

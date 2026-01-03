@@ -27,11 +27,12 @@ app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'entry-management-secret',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production', 
+    secure: false, // Set to false for localhost
     maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true
+    httpOnly: true,
+    sameSite: 'lax'
   }
 }));
 app.use(express.urlencoded({ extended: true }));
@@ -105,6 +106,7 @@ app.post('/api/logout', (req, res) => {
 
 // Check auth status
 app.get('/api/auth-status', (req, res) => {
+  console.log('Auth status check - Session ID:', req.sessionID);
   console.log('Auth status check - Session:', req.session);
   console.log('Authenticated property:', req.session?.authenticated);
   const isAuth = !!(req.session && req.session.authenticated);

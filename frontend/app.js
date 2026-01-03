@@ -9,6 +9,32 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Authentication middleware
+async function requireAuth(req, res, next) {
+  try {
+    console.log('RequireAuth: Checking auth for:', req.path);
+    console.log('RequireAuth: Cookies:', req.headers.cookie);
+    
+    const response = await axios.get(`${API_BASE_URL}/auth-status`, {
+      headers: { Cookie: req.headers.cookie || '' },
+      timeout: 5000
+    });
+    
+    console.log('RequireAuth: Auth response:', response.data);
+    
+    if (response.data.authenticated) {
+      console.log('RequireAuth: User is authenticated, proceeding');
+      return next();
+    } else {
+      console.log('RequireAuth: User not authenticated, redirecting to /login');
+      return res.redirect('/login');
+    }
+  } catch (error) {
+    console.log('RequireAuth: Auth check failed, redirecting to login:', error.message);
+    return res.redirect('/login');
+  }
+}
+
 // Login page (no auth required)
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
@@ -75,96 +101,6 @@ app.use((req, res, next) => {
 
 // Serve static files AFTER auth middleware
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Login page (no auth required)
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-
-// Login API endpoint
-app.post('/api/login', async (req, res) => {
-  try {
-    console.log('Frontend login attempt:', req.body);
-    console.log('Request cookies:', req.headers.cookie);
-    
-    const response = await axios.post(`${API_BASE_URL}/login`, req.body, {
-      headers: { 
-        'Cookie': req.headers.cookie || '',
-        'Content-Type': 'application/json'
-      },
-      withCredentials: true
-    });
-    
-    console.log('Backend login response:', response.data);
-    console.log('Response cookies:', response.headers['set-cookie']);
-    
-    // Forward ALL cookies from backend
-    if (response.headers['set-cookie']) {
-      response.headers['set-cookie'].forEach(cookie => {
-        res.setHeader('Set-Cookie', cookie);
-      });
-    }
-    
-    res.json(response.data);
-  } catch (error) {
-    console.log('Login error:', error.response?.data || error.message);
-    res.status(error.response?.status || 500).json({ 
-      error: error.response?.data?.error || 'Login failed' 
-    });
-  }
-});
-
-// Logout API endpoint
-app.post('/api/logout', async (req, res) => {
-  try {
-    const response = await axios.post(`${API_BASE_URL}/logout`, {}, {
-      headers: { Cookie: req.headers.cookie || '' }
-    });
-    
-    // Clear the session cookie
-    res.clearCookie('connect.sid');
-    res.json(response.data);
-  } catch (error) {
-    res.status(500).json({ error: 'Logout failed' });
-  }
-});
-
-// Authentication middleware
-async function requireAuth(req, res, next) {
-  try {
-    console.log('RequireAuth: Checking auth for:', req.path);
-    console.log('RequireAuth: Cookies:', req.headers.cookie);
-    
-    const response = await axios.get(`${API_BASE_URL}/auth-status`, {
-      headers: { Cookie: req.headers.cookie || '' },
-      timeout: 5000
-    });
-    
-    console.log('RequireAuth: Auth response:', response.data);
-    
-    if (response.data.authenticated) {
-      console.log('RequireAuth: User is authenticated, proceeding');
-      return next();
-    } else {
-      console.log('RequireAuth: User not authenticated, redirecting to /login');
-      return res.redirect('/login');
-    }
-  } catch (error) {
-    console.log('RequireAuth: Auth check failed, redirecting to login:', error.message);
-    return res.redirect('/login');
-  }
-}
-
-// Apply auth middleware to all routes except login and API
-app.use((req, res, next) => {
-  console.log('Middleware check for path:', req.path);
-  if (req.path === '/login' || req.path.startsWith('/api/') || req.path.match(/\.(css|js|ico|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)) {
-    console.log('Skipping auth for:', req.path);
-    return next();
-  }
-  console.log('Applying auth check for:', req.path);
-  return requireAuth(req, res, next);
-});
 
 // Protected routes
 app.get('/', (req, res) => {
@@ -391,6 +327,15 @@ app.post('/api/export/datewise-pdf', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Protected routes
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/qualitywise.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'qualitywise.html'));
 });
 
 // Catch all other routes and redirect to login
