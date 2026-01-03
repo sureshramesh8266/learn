@@ -29,19 +29,28 @@ const searchInput = document.getElementById('searchInput');
 let allEntries = [];
 let filteredEntries = [];
 
-// WebSocket connection
-const socket = io('http://localhost:3001');
+// WebSocket connection (optional)
+let socket = null;
+try {
+  if (typeof io !== 'undefined') {
+    socket = io('http://localhost:3001');
+  }
+} catch (error) {
+  console.log('Socket.IO not available, real-time updates disabled');
+}
 
-// Listen for deleted entries
-socket.on('entriesDeleted', (deletedIds) => {
-  deletedIds.forEach(id => {
-    const row = document.querySelector(`input[value="${id}"]`)?.closest('tr');
-    if (row) row.remove();
+// Listen for deleted entries (if socket is available)
+if (socket) {
+  socket.on('entriesDeleted', (deletedIds) => {
+    deletedIds.forEach(id => {
+      const row = document.querySelector(`input[value="${id}"]`)?.closest('tr');
+      if (row) row.remove();
+    });
+    updateSelectAllState();
+    updateDeleteButton();
+    updateStats();
   });
-  updateSelectAllState();
-  updateDeleteButton();
-  updateStats();
-});
+}
 
 // Update stats
 function updateStats() {
@@ -95,12 +104,14 @@ function displayEntries(entries) {
   updateStats();
 }
 
-// Listen for new entries via WebSocket
-socket.on('newEntry', (entry) => {
-  // Add to allEntries array to keep it synchronized
-  allEntries.unshift(entry);
-  addEntryToTable(entry, true);
-});
+// Listen for new entries via WebSocket (if available)
+if (socket) {
+  socket.on('newEntry', (entry) => {
+    // Add to allEntries array to keep it synchronized
+    allEntries.unshift(entry);
+    addEntryToTable(entry, true);
+  });
+}
 
 function addEntryToTable(entry, isNew = false) {
   const row = document.createElement('tr');
