@@ -9,9 +9,45 @@ const exportExcelBtn = document.getElementById('exportExcel');
 const logoutBtn = document.getElementById('logoutBtn');
 
 let allEntries = [];
+let socket = null;
+
+// Initialize Socket.IO connection
+function initializeSocket() {
+  try {
+    socket = io();
+    
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+    
+    // Listen for new entries
+    socket.on('newEntry', (entry) => {
+      console.log('New entry received:', entry);
+      allEntries.unshift(entry);
+      applyFilters();
+    });
+    
+    // Listen for deleted entries
+    socket.on('entriesDeleted', (deletedIds) => {
+      console.log('Entries deleted:', deletedIds);
+      allEntries = allEntries.filter(entry => !deletedIds.includes(entry.id.toString()));
+      applyFilters();
+    });
+    
+  } catch (error) {
+    console.log('Socket.IO not available:', error.message);
+  }
+}
 
 // Load entries on page load
-document.addEventListener('DOMContentLoaded', loadEntries);
+document.addEventListener('DOMContentLoaded', () => {
+  initializeSocket();
+  loadEntries();
+});
 
 // Load entries from API
 async function loadEntries() {

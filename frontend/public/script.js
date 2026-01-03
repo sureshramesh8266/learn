@@ -29,23 +29,53 @@ const searchInput = document.getElementById('searchInput');
 let allEntries = [];
 let filteredEntries = [];
 
-// WebSocket connection (completely optional)
+// WebSocket connection
 let socket = null;
-// Socket.IO disabled for deployment
-console.log('Socket.IO disabled for deployment');
 
-// Listen for deleted entries (if socket is available)
-if (socket) {
-  socket.on('entriesDeleted', (deletedIds) => {
-    deletedIds.forEach(id => {
-      const row = document.querySelector(`input[value="${id}"]`)?.closest('tr');
-      if (row) row.remove();
+// Initialize Socket.IO connection
+function initializeSocket() {
+  try {
+    socket = io();
+    
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
     });
-    updateSelectAllState();
-    updateDeleteButton();
-    updateStats();
-  });
+    
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
+    });
+    
+    // Listen for new entries
+    socket.on('newEntry', (entry) => {
+      console.log('New entry received:', entry);
+      allEntries.unshift(entry);
+      addEntryToTable(entry, true);
+      updateStats();
+    });
+    
+    // Listen for deleted entries
+    socket.on('entriesDeleted', (deletedIds) => {
+      console.log('Entries deleted:', deletedIds);
+      deletedIds.forEach(id => {
+        const row = document.querySelector(`input[value="${id}"]`)?.closest('tr');
+        if (row) row.remove();
+        // Remove from allEntries array
+        allEntries = allEntries.filter(entry => !deletedIds.includes(entry.id.toString()));
+      });
+      updateSelectAllState();
+      updateDeleteButton();
+      updateStats();
+    });
+    
+  } catch (error) {
+    console.log('Socket.IO not available:', error.message);
+  }
 }
+
+// Initialize socket when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  initializeSocket();
+});
 
 // Update stats
 function updateStats() {
@@ -99,14 +129,8 @@ function displayEntries(entries) {
   updateStats();
 }
 
-// Listen for new entries via WebSocket (if available)
-if (socket) {
-  socket.on('newEntry', (entry) => {
-    // Add to allEntries array to keep it synchronized
-    allEntries.unshift(entry);
-    addEntryToTable(entry, true);
-  });
-}
+// Listen for new entries via WebSocket
+// Socket events are handled in initializeSocket function above
 
 function addEntryToTable(entry, isNew = false) {
   const row = document.createElement('tr');
