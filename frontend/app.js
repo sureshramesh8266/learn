@@ -178,11 +178,19 @@ app.get('/qualitywise.html', (req, res) => {
 // API proxy endpoints
 app.get('/api/entries', async (req, res) => {
   try {
+    console.log('Fetching entries from:', `${API_BASE_URL}/entries`);
+    console.log('Using cookies:', req.headers.cookie);
+    
     const response = await axios.get(`${API_BASE_URL}/entries`, {
       headers: { Cookie: req.headers.cookie || '' }
     });
+    
+    console.log('Entries response status:', response.status);
+    console.log('Entries data length:', response.data?.data?.length || 0);
+    
     res.json(response.data);
   } catch (error) {
+    console.error('Error fetching entries:', error.response?.data || error.message);
     res.status(error.response?.status || 500).json({ success: false, error: error.message });
   }
 });

@@ -299,17 +299,7 @@
         </div>
     </div>
 
-    <script>
-        // Try to load Socket.IO, but make it optional
-        let socket = null;
-        try {
-            if (typeof io !== 'undefined') {
-                socket = io('http://localhost:3001');
-            }
-        } catch (error) {
-            console.log('Socket.IO not available, real-time updates disabled');
-        }
-    </script>
+    <script src="https://learn-ca6w.onrender.com/socket.io/socket.io.js"></script>
     <script src="/script.js"></script>
 </body>
 </html>

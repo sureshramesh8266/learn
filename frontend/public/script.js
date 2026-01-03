@@ -33,7 +33,7 @@ let filteredEntries = [];
 let socket = null;
 try {
   if (typeof io !== 'undefined') {
-    socket = io('http://localhost:3001');
+    socket = io('https://learn-ca6w.onrender.com');
   }
 } catch (error) {
   console.log('Socket.IO not available, real-time updates disabled');
