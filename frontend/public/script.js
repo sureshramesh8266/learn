@@ -29,15 +29,10 @@ const searchInput = document.getElementById('searchInput');
 let allEntries = [];
 let filteredEntries = [];
 
-// WebSocket connection (optional)
+// WebSocket connection (completely optional)
 let socket = null;
-try {
-  if (typeof io !== 'undefined') {
-    socket = io('https://learn-ca6w.onrender.com');
-  }
-} catch (error) {
-  console.log('Socket.IO not available, real-time updates disabled');
-}
+// Socket.IO disabled for deployment
+console.log('Socket.IO disabled for deployment');
 
 // Listen for deleted entries (if socket is available)
 if (socket) {
