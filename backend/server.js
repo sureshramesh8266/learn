@@ -13,31 +13,60 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"]
   }
 });
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true
 }));
 app.use(express.json());
 app.use(session({
-  secret: 'entry-management-secret',
+  secret: process.env.SESSION_SECRET || 'entry-management-secret',
   resave: false,
   saveUninitialized: true,
   cookie: { 
-    secure: false, 
+    secure: process.env.NODE_ENV === 'production', 
     maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: false
+    httpOnly: true
   }
 }));
 app.use(express.urlencoded({ extended: true }));
 
 // Initialize database
 createTable();
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Database health check
+app.get('/api/health/db', async (req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.status(200).json({ 
+      status: 'OK', 
+      database: 'Connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'ERROR', 
+      database: 'Disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
 
 // Authentication middleware
 function requireAuth(req, res, next) {

@@ -4,7 +4,7 @@ const path = require('path');
 
 const app = express();
 const PORT = 3000;
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -253,7 +253,7 @@ app.post('/api/export/excel', async (req, res) => {
 // Datewise total API endpoint
 app.post('/api/datewise-total', async (req, res) => {
   try {
-    const response = await fetch('http://localhost:3001/api/datewise-total', {
+    const response = await fetch(`${API_BASE_URL}/datewise-total`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -271,7 +271,7 @@ app.post('/api/datewise-total', async (req, res) => {
 // Mark entries API endpoint
 app.post('/api/mark-entries', async (req, res) => {
   try {
-    const response = await fetch('http://localhost:3001/api/mark-entries', {
+    const response = await fetch(`${API_BASE_URL}/mark-entries`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ app.post('/api/mark-entries', async (req, res) => {
 // Qualitywise PDF export
 app.post('/api/export/qualitywise-pdf', async (req, res) => {
   try {
-    const response = await fetch('http://localhost:3001/api/export/qualitywise-pdf', {
+    const response = await fetch(`${API_BASE_URL}/export/qualitywise-pdf`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -316,7 +316,7 @@ app.post('/api/export/qualitywise-pdf', async (req, res) => {
 // Qualitywise Excel export
 app.post('/api/export/qualitywise-excel', async (req, res) => {
   try {
-    const response = await fetch('http://localhost:3001/api/export/qualitywise-excel', {
+    const response = await fetch(`${API_BASE_URL}/export/qualitywise-excel`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -343,7 +343,7 @@ app.post('/api/export/qualitywise-excel', async (req, res) => {
 // Update entry API endpoint
 app.put('/api/entries/:id', async (req, res) => {
   try {
-    const response = await fetch(`http://localhost:3001/api/entries/${req.params.id}`, {
+    const response = await fetch(`${API_BASE_URL}/entries/${req.params.id}`, {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -361,7 +361,7 @@ app.put('/api/entries/:id', async (req, res) => {
 // Datewise PDF export
 app.post('/api/export/datewise-pdf', async (req, res) => {
   try {
-    const response = await fetch('http://localhost:3001/api/export/datewise-pdf', {
+    const response = await fetch(`${API_BASE_URL}/export/datewise-pdf`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',

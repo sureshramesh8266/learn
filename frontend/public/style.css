@@ -693,6 +693,7 @@ body {
     flex-direction: column;
     gap: var(--spacing-md);
     text-align: center;
+    padding: 0 var(--spacing-md);
   }
   
   .nav-links {
@@ -705,6 +706,12 @@ body {
     justify-content: center;
     flex-wrap: wrap;
     gap: var(--spacing-sm);
+  }
+  
+  .header-actions .btn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
   }
   
   .main-content {
@@ -735,7 +742,13 @@ body {
     padding-top: var(--spacing-md);
   }
   
-  .datewise-section {
+  .export-actions .btn {
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+  }
+  
+  .date-range-section {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -758,9 +771,20 @@ body {
     padding-top: var(--spacing-md);
   }
   
-  .quality-filter {
+  .mark-actions .btn {
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
+  }
+  
+  .quality-filter, .status-filter {
     justify-content: center;
     width: 100%;
+  }
+  
+  .quality-filter select, .status-filter select {
+    flex: 1;
+    min-width: 150px;
   }
   
   .search-box {
@@ -816,6 +840,11 @@ body {
     flex-direction: column;
   }
   
+  .modal-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
   .stats-grid {
     grid-template-columns: 1fr;
   }
@@ -843,6 +872,11 @@ body {
   .btn-sm {
     padding: 2px 6px;
     font-size: 0.625rem;
+  }
+  
+  .header-actions .btn {
+    min-width: 100px;
+    padding: var(--spacing-sm);
   }
   
   .data-table {
@@ -893,6 +927,16 @@ body {
   
   .stat-info p {
     font-size: 0.75rem;
+  }
+  
+  .export-actions .btn {
+    min-width: 80px;
+    font-size: 0.625rem;
+  }
+  
+  .mark-actions .btn {
+    min-width: 100px;
+    font-size: 0.625rem;
   }
 }
 
