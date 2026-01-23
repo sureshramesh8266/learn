@@ -5,11 +5,32 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  connectionTimeoutMillis: 30000,
+  idleTimeoutMillis: 30000,
+  max: 10,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000
 });
 
 const createTable = async () => {
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      console.log('Connecting to database...');
+      await pool.query('SELECT NOW()');
+      console.log('Database connected successfully');
+      break;
+    } catch (err) {
+      retries--;
+      if (retries === 0) throw err;
+      console.log(`Connection failed, retrying... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }
+  
   try {
+    
     await pool.query(`
       CREATE TABLE IF NOT EXISTS entries (
         id SERIAL PRIMARY KEY,
@@ -76,6 +97,7 @@ const createTable = async () => {
     console.log('Table and triggers created successfully');
   } catch (err) {
     console.error('Error creating table:', err);
+    throw err;
   }
 };
 

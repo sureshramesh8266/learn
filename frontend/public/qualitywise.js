@@ -57,7 +57,7 @@ async function loadEntries() {
         const loader = document.getElementById('loader');
         if (loader) loader.style.display = 'table-row';
         
-        const response = await fetch('/api/entries');
+        const response = await fetch(`${window.API_CONFIG.BASE_URL}/entries`);
         const result = await response.json();
         
         if (result.success) {
@@ -217,7 +217,7 @@ markSelectedBtn.addEventListener('click', async () => {
     markSelectedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Marking...';
     
     try {
-        const response = await fetch('/api/mark-entries', {
+        const response = await fetch(`${window.API_CONFIG.BASE_URL}/mark-entries`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ entryIds: selectedEntries.map(id => parseInt(id)), marked: true })
@@ -244,7 +244,7 @@ markSelectedBtn.addEventListener('click', async () => {
 // Undo single entry
 async function undoSingleEntry(entryId) {
     try {
-        const response = await fetch('/api/mark-entries', {
+        const response = await fetch(`${window.API_CONFIG.BASE_URL}/mark-entries`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ entryIds: [entryId], marked: false })
@@ -279,7 +279,7 @@ exportPdfBtn.addEventListener('click', async () => {
     try {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/api/export/qualitywise-pdf';
+        form.action = `${window.API_CONFIG.BASE_URL}/export/qualitywise-pdf`;
         
         selectedEntries.forEach(entryId => {
             const input = document.createElement('input');
@@ -317,7 +317,7 @@ exportExcelBtn.addEventListener('click', async () => {
     try {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/api/export/qualitywise-excel';
+        form.action = `${window.API_CONFIG.BASE_URL}/export/qualitywise-excel`;
         
         selectedEntries.forEach(entryId => {
             const input = document.createElement('input');
@@ -351,7 +351,7 @@ logoutBtn.addEventListener('click', async () => {
     }
     
     try {
-        const response = await fetch('/api/logout', {
+        const response = await fetch(`${window.API_CONFIG.BASE_URL}/logout`, {
             method: 'POST',
             credentials: 'include'
         });

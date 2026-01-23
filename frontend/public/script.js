@@ -29,55 +29,8 @@ const searchInput = document.getElementById('searchInput');
 let allEntries = [];
 let filteredEntries = [];
 
-// WebSocket connection
+// WebSocket connection (disabled for now)
 let socket = null;
-
-// Initialize Socket.IO connection
-function initializeSocket() {
-  try {
-    // For production deployment, connect to current domain
-    const socketUrl = window.location.protocol + '//' + window.location.host;
-    socket = io(socketUrl);
-    
-    socket.on('connect', () => {
-      console.log('Socket connected:', socket.id);
-    });
-    
-    socket.on('disconnect', () => {
-      console.log('Socket disconnected');
-    });
-    
-    // Listen for new entries
-    socket.on('newEntry', (entry) => {
-      console.log('New entry received:', entry);
-      allEntries.unshift(entry);
-      addEntryToTable(entry, true);
-      updateStats();
-    });
-    
-    // Listen for deleted entries
-    socket.on('entriesDeleted', (deletedIds) => {
-      console.log('Entries deleted:', deletedIds);
-      deletedIds.forEach(id => {
-        const row = document.querySelector(`input[value="${id}"]`)?.closest('tr');
-        if (row) row.remove();
-        // Remove from allEntries array
-        allEntries = allEntries.filter(entry => !deletedIds.includes(entry.id.toString()));
-      });
-      updateSelectAllState();
-      updateDeleteButton();
-      updateStats();
-    });
-    
-  } catch (error) {
-    console.log('Socket.IO not available:', error.message);
-  }
-}
-
-// Initialize socket when page loads
-document.addEventListener('DOMContentLoaded', () => {
-  initializeSocket();
-});
 
 // Update stats
 function updateStats() {
@@ -103,7 +56,7 @@ async function loadEntries() {
     const loader = document.getElementById('loader');
     if (loader) loader.style.display = 'table-row';
     
-    const response = await fetch('/api/entries');
+    const response = await fetch(`${window.API_CONFIG.BASE_URL}/entries`);
     const result = await response.json();
     
     if (result.success) {
@@ -130,9 +83,6 @@ function displayEntries(entries) {
   updateSelectAllState();
   updateStats();
 }
-
-// Listen for new entries via WebSocket
-// Socket events are handled in initializeSocket function above
 
 function addEntryToTable(entry, isNew = false) {
   const row = document.createElement('tr');
@@ -454,7 +404,7 @@ entryForm.addEventListener('submit', async (e) => {
     
     try {
         const isEdit = entryForm.dataset.editId;
-        const url = isEdit ? `/api/entries/${entryForm.dataset.editId}` : '/api/entries';
+        const url = isEdit ? `${window.API_CONFIG.BASE_URL}/entries/${entryForm.dataset.editId}` : `${window.API_CONFIG.BASE_URL}/entries`;
         const method = isEdit ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
@@ -500,7 +450,7 @@ deleteSelectedBtn.addEventListener('click', async () => {
     deleteSelectedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
     
     try {
-        const response = await fetch('/api/entries', {
+        const response = await fetch(`${window.API_CONFIG.BASE_URL}/entries`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -564,7 +514,7 @@ exportPdfBtn.addEventListener('click', async () => {
     try {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/api/export/pdf';
+        form.action = `${window.API_CONFIG.BASE_URL}/export/pdf`;
         
         // Add selectedEntries as a JSON string
         const input = document.createElement('input');
@@ -603,7 +553,7 @@ exportExcelBtn.addEventListener('click', async () => {
     try {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/api/export/excel';
+        form.action = `${window.API_CONFIG.BASE_URL}/export/excel`;
         
         // Add selectedEntries as a JSON string
         const input = document.createElement('input');
@@ -682,7 +632,7 @@ document.getElementById('datewisePdf').addEventListener('click', async function(
     try {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '/api/export/datewise-pdf';
+        form.action = `${window.API_CONFIG.BASE_URL}/export/datewise-pdf`;
         
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -765,7 +715,7 @@ logoutBtn.addEventListener('click', async () => {
     }
     
     try {
-        const response = await fetch('/api/logout', {
+        const response = await fetch(`${window.API_CONFIG.BASE_URL}/logout`, {
             method: 'POST',
             credentials: 'include'
         });
