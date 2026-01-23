@@ -3,11 +3,23 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001/api';
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Set proper MIME types for static files
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 // Authentication middleware
 async function requireAuth(req, res, next) {
@@ -98,9 +110,6 @@ app.use((req, res, next) => {
   console.log('Applying auth check for:', req.path);
   return requireAuth(req, res, next);
 });
-
-// Serve static files AFTER auth middleware
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Protected routes
 app.get('/', (req, res) => {
